@@ -143,6 +143,8 @@
 #include "servers/physics_server_3d.h"
 #include "servers/rendering/rendering_server_default.h"
 
+#include "tests/cesium/test_hello_cesium.h"
+
 int test_main(int argc, char *argv[]) {
 	bool run_tests = true;
 
