@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  vulkan_context_win.cpp                                                */
+/*  rendering_context_driver_vulkan_ios.mm                                */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,42 +28,42 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#if defined(WINDOWS_ENABLED) && defined(VULKAN_ENABLED)
+#import "rendering_context_driver_vulkan_ios.h"
 
-#include "vulkan_context_win.h"
+#ifdef VULKAN_ENABLED
 
 #ifdef USE_VOLK
 #include <volk.h>
 #else
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_metal.h>
 #endif
 
-const char *VulkanContextWindows::_get_platform_surface_extension() const {
-	return VK_KHR_WIN32_SURFACE_EXTENSION_NAME;
+const char *RenderingContextDriverVulkanIOS::_get_platform_surface_extension() const {
+	return VK_EXT_METAL_SURFACE_EXTENSION_NAME;
 }
 
-Error VulkanContextWindows::window_create(DisplayServer::WindowID p_window_id, DisplayServer::VSyncMode p_vsync_mode, int p_width, int p_height, const void *p_platform_data) {
-	const WindowPlatformData *wpd = (const WindowPlatformData *)p_platform_data;
+RenderingContextDriver::SurfaceID RenderingContextDriverVulkanIOS::surface_create(const void *p_platform_data) {
+	const WindowPlatformData *wpd = (const WindowPlatformData *)(p_platform_data);
 
-	VkWin32SurfaceCreateInfoKHR createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-	createInfo.hinstance = wpd->instance;
-	createInfo.hwnd = wpd->window;
+	VkMetalSurfaceCreateInfoEXT create_info = {};
+	create_info.sType = VK_STRUCTURE_TYPE_METAL_SURFACE_CREATE_INFO_EXT;
+	create_info.pLayer = *wpd->layer_ptr;
 
-	VkSurfaceKHR surface = VK_NULL_HANDLE;
-	VkResult err = vkCreateWin32SurfaceKHR(get_instance(), &createInfo, nullptr, &surface);
-	ERR_FAIL_COND_V(err, ERR_CANT_CREATE);
-	return _window_create(p_window_id, p_vsync_mode, surface, p_width, p_height);
+	VkSurfaceKHR vk_surface = VK_NULL_HANDLE;
+	VkResult err = vkCreateMetalSurfaceEXT(instance_get(), &create_info, nullptr, &vk_surface);
+	ERR_FAIL_COND_V(err != VK_SUCCESS, SurfaceID());
+
+	Surface *surface = memnew(Surface);
+	surface->vk_surface = vk_surface;
+	return SurfaceID(surface);
 }
 
-VulkanContextWindows::VulkanContextWindows() {
-	// Workaround for Vulkan not working on setups with AMD integrated graphics + NVIDIA dedicated GPU (GH-57708).
-	// This prevents using AMD integrated graphics with Vulkan entirely, but it allows the engine to start
-	// even on outdated/broken driver setups.
-	OS::get_singleton()->set_environment("DISABLE_LAYER_AMD_SWITCHABLE_GRAPHICS_1", "1");
+RenderingContextDriverVulkanIOS::RenderingContextDriverVulkanIOS() {
+	// Does nothing.
 }
 
-VulkanContextWindows::~VulkanContextWindows() {
+RenderingContextDriverVulkanIOS::~RenderingContextDriverVulkanIOS() {
+	// Does nothing.
 }
 
-#endif // WINDOWS_ENABLED && VULKAN_ENABLED
+#endif // VULKAN_ENABLED

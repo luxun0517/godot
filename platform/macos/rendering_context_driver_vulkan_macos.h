@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  vulkan_context_android.h                                              */
+/*  rendering_context_driver_vulkan_macos.h                               */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,31 +28,31 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef VULKAN_CONTEXT_ANDROID_H
-#define VULKAN_CONTEXT_ANDROID_H
+#ifndef RENDERING_CONTEXT_DRIVER_VULKAN_MACOS_H
+#define RENDERING_CONTEXT_DRIVER_VULKAN_MACOS_H
 
 #ifdef VULKAN_ENABLED
 
-#include "drivers/vulkan/vulkan_context.h"
+#include "drivers/vulkan/rendering_context_driver_vulkan.h"
 
-struct ANativeWindow;
+#import <QuartzCore/CAMetalLayer.h>
 
-class VulkanContextAndroid : public VulkanContext {
+class RenderingContextDriverVulkanMacOS : public RenderingContextDriverVulkan {
+private:
 	virtual const char *_get_platform_surface_extension() const override final;
+
+protected:
+	SurfaceID surface_create(const void *p_platform_data) override final;
 
 public:
 	struct WindowPlatformData {
-		ANativeWindow *window;
+		CAMetalLayer *const *layer_ptr;
 	};
-	virtual Error window_create(DisplayServer::WindowID p_window_id, DisplayServer::VSyncMode p_vsync_mode, int p_width, int p_height, const void *p_platform_data) override final;
 
-	VulkanContextAndroid() = default;
-	~VulkanContextAndroid() override = default;
-
-protected:
-	bool _use_validation_layers() override;
+	RenderingContextDriverVulkanMacOS();
+	~RenderingContextDriverVulkanMacOS();
 };
 
 #endif // VULKAN_ENABLED
 
-#endif // VULKAN_CONTEXT_ANDROID_H
+#endif // RENDERING_CONTEXT_DRIVER_VULKAN_MACOS_H

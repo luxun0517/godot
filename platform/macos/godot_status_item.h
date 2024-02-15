@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  vulkan_context_macos.mm                                               */
+/*  godot_status_item.h                                                   */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,37 +28,24 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "vulkan_context_macos.h"
+#ifndef GODOT_STATUS_ITEM_H
+#define GODOT_STATUS_ITEM_H
 
-#ifdef VULKAN_ENABLED
+#include "core/input/input_enums.h"
+#include "core/variant/callable.h"
 
-#ifdef USE_VOLK
-#include <volk.h>
-#else
-#include <vulkan/vulkan.h>
-#endif
+#import <AppKit/AppKit.h>
+#import <Foundation/Foundation.h>
 
-const char *VulkanContextMacOS::_get_platform_surface_extension() const {
-	return VK_MVK_MACOS_SURFACE_EXTENSION_NAME;
+@interface GodotStatusItemView : NSView {
+	NSImage *image;
+	Callable cb;
 }
 
-Error VulkanContextMacOS::window_create(DisplayServer::WindowID p_window_id, DisplayServer::VSyncMode p_vsync_mode, int p_width, int p_height, const void *p_platform_data) {
-	const WindowPlatformData *wpd = (const WindowPlatformData *)p_platform_data;
+- (void)processMouseEvent:(NSEvent *)event index:(MouseButton)index;
+- (void)setImage:(NSImage *)image;
+- (void)setCallback:(const Callable &)callback;
 
-	VkMacOSSurfaceCreateInfoMVK createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK;
-	createInfo.pView = (__bridge const void *)(*wpd->view_ptr);
+@end
 
-	VkSurfaceKHR surface = VK_NULL_HANDLE;
-	VkResult err = vkCreateMacOSSurfaceMVK(get_instance(), &createInfo, nullptr, &surface);
-	ERR_FAIL_COND_V(err, ERR_CANT_CREATE);
-	return _window_create(p_window_id, p_vsync_mode, surface, p_width, p_height);
-}
-
-VulkanContextMacOS::VulkanContextMacOS() {
-}
-
-VulkanContextMacOS::~VulkanContextMacOS() {
-}
-
-#endif // VULKAN_ENABLED
+#endif // GODOT_STATUS_ITEM_H

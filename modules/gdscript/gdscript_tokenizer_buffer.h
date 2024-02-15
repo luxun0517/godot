@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  vulkan_context_macos.h                                                */
+/*  gdscript_tokenizer_buffer.h                                           */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,28 +28,66 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef VULKAN_CONTEXT_MACOS_H
-#define VULKAN_CONTEXT_MACOS_H
+#ifndef GDSCRIPT_TOKENIZER_BUFFER_H
+#define GDSCRIPT_TOKENIZER_BUFFER_H
 
-#ifdef VULKAN_ENABLED
+#include "gdscript_tokenizer.h"
 
-#include "drivers/vulkan/vulkan_context.h"
+class GDScriptTokenizerBuffer : public GDScriptTokenizer {
+public:
+	enum CompressMode {
+		COMPRESS_NONE,
+		COMPRESS_ZSTD,
+	};
 
-#import <AppKit/AppKit.h>
+	enum {
+		TOKEN_BYTE_MASK = 0x80,
+		TOKEN_BITS = 8,
+		TOKEN_MASK = (1 << (TOKEN_BITS - 1)) - 1,
+	};
 
-class VulkanContextMacOS : public VulkanContext {
-	virtual const char *_get_platform_surface_extension() const override final;
+	Vector<StringName> identifiers;
+	Vector<Variant> constants;
+	Vector<int> continuation_lines;
+	HashMap<int, int> token_lines;
+	HashMap<int, int> token_columns;
+	Vector<Token> tokens;
+	int current = 0;
+	uint32_t current_line = 1;
+
+	bool multiline_mode = false;
+	List<int> indent_stack;
+	List<List<int>> indent_stack_stack; // For lambdas, which require manipulating the indentation point.
+	int pending_indents = 0;
+	bool last_token_was_newline = false;
+
+#ifdef TOOLS_ENABLED
+	HashMap<int, CommentData> dummy;
+#endif // TOOLS_ENABLED
+
+	static int _token_to_binary(const Token &p_token, Vector<uint8_t> &r_buffer, int p_start, HashMap<StringName, uint32_t> &r_identifiers_map, HashMap<Variant, uint32_t, VariantHasher, VariantComparator> &r_constants_map);
+	Token _binary_to_token(const uint8_t *p_buffer);
 
 public:
-	struct WindowPlatformData {
-		const id *view_ptr;
-	};
-	virtual Error window_create(DisplayServer::WindowID p_window_id, DisplayServer::VSyncMode p_vsync_mode, int p_width, int p_height, const void *p_platform_data) override final;
+	Error set_code_buffer(const Vector<uint8_t> &p_buffer);
+	static Vector<uint8_t> parse_code_string(const String &p_code, CompressMode p_compress_mode);
 
-	VulkanContextMacOS();
-	~VulkanContextMacOS();
+	virtual int get_cursor_line() const override;
+	virtual int get_cursor_column() const override;
+	virtual void set_cursor_position(int p_line, int p_column) override;
+	virtual void set_multiline_mode(bool p_state) override;
+	virtual bool is_past_cursor() const override;
+	virtual void push_expression_indented_block() override; // For lambdas, or blocks inside expressions.
+	virtual void pop_expression_indented_block() override; // For lambdas, or blocks inside expressions.
+	virtual bool is_text() override { return false; };
+
+#ifdef TOOLS_ENABLED
+	virtual const HashMap<int, CommentData> &get_comments() const override {
+		return dummy;
+	}
+#endif // TOOLS_ENABLED
+
+	virtual Token scan() override;
 };
 
-#endif // VULKAN_ENABLED
-
-#endif // VULKAN_CONTEXT_MACOS_H
+#endif // GDSCRIPT_TOKENIZER_BUFFER_H

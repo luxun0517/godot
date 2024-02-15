@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  vulkan_context_x11.cpp                                                */
+/*  rendering_context_driver_vulkan_windows.h                             */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,38 +28,33 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
+#ifndef RENDERING_CONTEXT_DRIVER_VULKAN_WINDOWS_H
+#define RENDERING_CONTEXT_DRIVER_VULKAN_WINDOWS_H
+
 #ifdef VULKAN_ENABLED
 
-#include "vulkan_context_x11.h"
+#include "drivers/vulkan/rendering_context_driver_vulkan.h"
 
-#ifdef USE_VOLK
-#include <volk.h>
-#else
-#include <vulkan/vulkan.h>
-#endif
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
-const char *VulkanContextX11::_get_platform_surface_extension() const {
-	return VK_KHR_XLIB_SURFACE_EXTENSION_NAME;
-}
+class RenderingContextDriverVulkanWindows : public RenderingContextDriverVulkan {
+private:
+	const char *_get_platform_surface_extension() const override final;
 
-Error VulkanContextX11::window_create(DisplayServer::WindowID p_window_id, DisplayServer::VSyncMode p_vsync_mode, int p_width, int p_height, const void *p_platform_data) {
-	const WindowPlatformData *wpd = (const WindowPlatformData *)p_platform_data;
+protected:
+	SurfaceID surface_create(const void *p_platform_data) override final;
 
-	VkXlibSurfaceCreateInfoKHR createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
-	createInfo.dpy = wpd->display;
-	createInfo.window = wpd->window;
+public:
+	struct WindowPlatformData {
+		HWND window;
+		HINSTANCE instance;
+	};
 
-	VkSurfaceKHR surface = VK_NULL_HANDLE;
-	VkResult err = vkCreateXlibSurfaceKHR(get_instance(), &createInfo, nullptr, &surface);
-	ERR_FAIL_COND_V(err, ERR_CANT_CREATE);
-	return _window_create(p_window_id, p_vsync_mode, surface, p_width, p_height);
-}
-
-VulkanContextX11::VulkanContextX11() {
-}
-
-VulkanContextX11::~VulkanContextX11() {
-}
+	RenderingContextDriverVulkanWindows();
+	~RenderingContextDriverVulkanWindows() override final;
+};
 
 #endif // VULKAN_ENABLED
+
+#endif // RENDERING_CONTEXT_DRIVER_VULKAN_WINDOWS_H

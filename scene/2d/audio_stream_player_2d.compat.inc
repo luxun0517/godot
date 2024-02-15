@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  vulkan_context_wayland.h                                              */
+/*  audio_stream_player_2d.compat.inc                                     */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,25 +28,14 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef VULKAN_CONTEXT_WAYLAND_H
-#define VULKAN_CONTEXT_WAYLAND_H
+#ifndef DISABLE_DEPRECATED
 
-#ifdef VULKAN_ENABLED
+bool AudioStreamPlayer2D::_is_autoplay_enabled_bind_compat_86907() {
+	return is_autoplay_enabled();
+}
 
-#include "drivers/vulkan/vulkan_context.h"
+void AudioStreamPlayer2D::_bind_compatibility_methods() {
+	ClassDB::bind_compatibility_method(D_METHOD("is_autoplay_enabled"), &AudioStreamPlayer2D::_is_autoplay_enabled_bind_compat_86907);
+}
 
-class VulkanContextWayland : public VulkanContext {
-	const char *_get_platform_surface_extension() const override final;
-
-public:
-	struct WindowPlatformData {
-		struct wl_display *display;
-		struct wl_surface *surface;
-	};
-
-	Error window_create(DisplayServer::WindowID p_window_id, DisplayServer::VSyncMode p_vsync_mode, int p_width, int p_height, const void *p_platform_data) override final;
-};
-
-#endif // VULKAN_ENABLED
-
-#endif // VULKAN_CONTEXT_WAYLAND_H
+#endif // DISABLE_DEPRECATED

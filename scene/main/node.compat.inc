@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  api_context_rd.cpp                                                    */
+/*  node.compat.inc                                                       */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,6 +28,14 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "api_context_rd.h"
+#ifndef DISABLE_DEPRECATED
 
-ApiContextRD::~ApiContextRD() {}
+PackedStringArray Node::get_configuration_warnings_bind_compat_68420() const {
+	return PackedStringArray(get_configuration_warnings());
+}
+
+void Node::_bind_compatibility_methods() {
+	ClassDB::bind_compatibility_method(D_METHOD("get_configuration_warnings"), &Node::get_configuration_warnings_bind_compat_68420);
+}
+
+#endif // DISABLE_DEPRECATED

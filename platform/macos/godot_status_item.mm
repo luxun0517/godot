@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  vulkan_context_wayland.cpp                                            */
+/*  godot_status_item.mm                                                  */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,32 +28,74 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "vulkan_context_wayland.h"
+#include "godot_status_item.h"
 
-#ifdef VULKAN_ENABLED
+#include "display_server_macos.h"
 
-#ifdef USE_VOLK
-#include <volk.h>
-#else
-#include <vulkan/vulkan.h>
-#endif
+@implementation GodotStatusItemView
 
-const char *VulkanContextWayland::_get_platform_surface_extension() const {
-	return VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME;
+- (id)init {
+	self = [super init];
+	image = nullptr;
+	return self;
 }
 
-Error VulkanContextWayland::window_create(DisplayServer::WindowID p_window_id, DisplayServer::VSyncMode p_vsync_mode, int p_width, int p_height, const void *p_platform_data) {
-	const WindowPlatformData *wpd = (const WindowPlatformData *)p_platform_data;
-
-	VkWaylandSurfaceCreateInfoKHR createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
-	createInfo.display = wpd->display;
-	createInfo.surface = wpd->surface;
-
-	VkSurfaceKHR surface = VK_NULL_HANDLE;
-	VkResult err = vkCreateWaylandSurfaceKHR(get_instance(), &createInfo, nullptr, &surface);
-	ERR_FAIL_COND_V(err, ERR_CANT_CREATE);
-	return _window_create(p_window_id, p_vsync_mode, surface, p_width, p_height);
+- (void)setImage:(NSImage *)newImage {
+	image = newImage;
+	[self setNeedsDisplayInRect:self.frame];
 }
 
-#endif // VULKAN_ENABLED
+- (void)setCallback:(const Callable &)callback {
+	cb = callback;
+}
+
+- (void)drawRect:(NSRect)rect {
+	if (image) {
+		[image drawInRect:rect];
+	}
+}
+
+- (void)processMouseEvent:(NSEvent *)event index:(MouseButton)index {
+	DisplayServerMacOS *ds = (DisplayServerMacOS *)DisplayServer::get_singleton();
+	if (!ds) {
+		return;
+	}
+
+	if (cb.is_valid()) {
+		Variant v_button = index;
+		Variant v_pos = ds->mouse_get_position();
+		Variant *v_args[2] = { &v_button, &v_pos };
+		Variant ret;
+		Callable::CallError ce;
+		cb.callp((const Variant **)&v_args, 2, ret, ce);
+	}
+}
+
+- (void)mouseDown:(NSEvent *)event {
+	[super mouseDown:event];
+	if (([event modifierFlags] & NSEventModifierFlagControl)) {
+		[self processMouseEvent:event index:MouseButton::RIGHT];
+	} else {
+		[self processMouseEvent:event index:MouseButton::LEFT];
+	}
+}
+
+- (void)rightMouseDown:(NSEvent *)event {
+	[super rightMouseDown:event];
+
+	[self processMouseEvent:event index:MouseButton::RIGHT];
+}
+
+- (void)otherMouseDown:(NSEvent *)event {
+	[super otherMouseDown:event];
+
+	if ((int)[event buttonNumber] == 2) {
+		[self processMouseEvent:event index:MouseButton::MIDDLE];
+	} else if ((int)[event buttonNumber] == 3) {
+		[self processMouseEvent:event index:MouseButton::MB_XBUTTON1];
+	} else if ((int)[event buttonNumber] == 4) {
+		[self processMouseEvent:event index:MouseButton::MB_XBUTTON2];
+	}
+}
+
+@end
