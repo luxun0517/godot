@@ -1442,6 +1442,15 @@ Error ClassDB::class_set_property(Object *p_object, const StringName &p_property
 	return OK;
 }
 
+Variant ClassDB::class_get_property_default_value(const StringName &p_class, const StringName &p_property) const {
+	bool valid;
+	Variant ret = ::ClassDB::class_get_default_property_value(p_class, p_property, &valid);
+	if (valid) {
+		return ret;
+	}
+	return Variant();
+}
+
 bool ClassDB::class_has_method(const StringName &p_class, const StringName &p_method, bool p_no_inheritance) const {
 	return ::ClassDB::has_method(p_class, p_method, p_no_inheritance);
 }
@@ -1579,6 +1588,8 @@ void ClassDB::_bind_methods() {
 	::ClassDB::bind_method(D_METHOD("class_get_property_list", "class", "no_inheritance"), &ClassDB::class_get_property_list, DEFVAL(false));
 	::ClassDB::bind_method(D_METHOD("class_get_property", "object", "property"), &ClassDB::class_get_property);
 	::ClassDB::bind_method(D_METHOD("class_set_property", "object", "property", "value"), &ClassDB::class_set_property);
+
+	::ClassDB::bind_method(D_METHOD("class_get_property_default_value", "class", "property"), &ClassDB::class_get_property_default_value);
 
 	::ClassDB::bind_method(D_METHOD("class_has_method", "class", "method", "no_inheritance"), &ClassDB::class_has_method, DEFVAL(false));
 
@@ -1910,7 +1921,7 @@ void EngineDebugger::send_message(const String &p_msg, const Array &p_data) {
 
 Error EngineDebugger::call_capture(void *p_user, const String &p_cmd, const Array &p_data, bool &r_captured) {
 	Callable &capture = *(Callable *)p_user;
-	if (capture.is_null()) {
+	if (!capture.is_valid()) {
 		return FAILED;
 	}
 	Variant cmd = p_cmd, data = p_data;

@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  plugin_config_dialog.h                                                */
+/*  text_server.compat.inc                                                */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,61 +28,14 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef PLUGIN_CONFIG_DIALOG_H
-#define PLUGIN_CONFIG_DIALOG_H
+#ifndef DISABLE_DEPRECATED
 
-#include "scene/gui/check_box.h"
-#include "scene/gui/dialogs.h"
-#include "scene/gui/line_edit.h"
-#include "scene/gui/option_button.h"
-#include "scene/gui/panel_container.h"
-#include "scene/gui/text_edit.h"
-#include "scene/gui/texture_rect.h"
+PackedInt32Array TextServer::_shaped_text_get_word_breaks_bind_compat_90732(const RID &p_shaped, BitField<TextServer::GraphemeFlag> p_grapheme_flags) const {
+	return shaped_text_get_word_breaks(p_shaped, p_grapheme_flags, 0);
+}
 
-class EditorValidationPanel;
+void TextServer::_bind_compatibility_methods() {
+	ClassDB::bind_compatibility_method(D_METHOD("shaped_text_get_word_breaks", "shaped", "grapheme_flags"), &TextServer::_shaped_text_get_word_breaks_bind_compat_90732, DEFVAL(GRAPHEME_IS_SPACE | GRAPHEME_IS_PUNCTUATION));
+}
 
-class PluginConfigDialog : public ConfirmationDialog {
-	GDCLASS(PluginConfigDialog, ConfirmationDialog);
-
-	enum {
-		MSG_ID_PLUGIN,
-		MSG_ID_SUBFOLDER,
-		MSG_ID_SCRIPT,
-		MSG_ID_ACTIVE,
-	};
-
-	LineEdit *name_edit = nullptr;
-	LineEdit *subfolder_edit = nullptr;
-	TextEdit *desc_edit = nullptr;
-	LineEdit *author_edit = nullptr;
-	LineEdit *version_edit = nullptr;
-	OptionButton *script_option_edit = nullptr;
-	LineEdit *script_edit = nullptr;
-	CheckBox *active_edit = nullptr;
-
-	LocalVector<Control *> plugin_edit_hidden_controls;
-
-	EditorValidationPanel *validation_panel = nullptr;
-
-	bool _edit_mode = false;
-
-	void _clear_fields();
-	void _on_confirmed();
-	void _on_canceled();
-	void _on_required_text_changed();
-	String _get_subfolder();
-
-	static String _to_absolute_plugin_path(const String &p_plugin_name);
-
-protected:
-	virtual void _notification(int p_what);
-	static void _bind_methods();
-
-public:
-	void config(const String &p_config_path);
-
-	PluginConfigDialog();
-	~PluginConfigDialog();
-};
-
-#endif // PLUGIN_CONFIG_DIALOG_H
+#endif
