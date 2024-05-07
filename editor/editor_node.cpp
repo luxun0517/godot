@@ -2603,8 +2603,8 @@ void EditorNode::_menu_option_confirm(int p_option, bool p_confirmed) {
 			List<String> extensions;
 			ResourceLoader::get_recognized_extensions_for_type("PackedScene", &extensions);
 			file->clear_filters();
-			for (int i = 0; i < extensions.size(); i++) {
-				file->add_filter("*." + extensions[i], extensions[i].to_upper());
+			for (const String &extension : extensions) {
+				file->add_filter("*." + extension, extension.to_upper());
 			}
 
 			Node *scene = editor_data.get_edited_scene_root();
@@ -2722,8 +2722,8 @@ void EditorNode::_menu_option_confirm(int p_option, bool p_confirmed) {
 			Ref<PackedScene> sd = memnew(PackedScene);
 			ResourceSaver::get_recognized_extensions(sd, &extensions);
 			file->clear_filters();
-			for (int i = 0; i < extensions.size(); i++) {
-				file->add_filter("*." + extensions[i], extensions[i].to_upper());
+			for (const String &extension : extensions) {
+				file->add_filter("*." + extension, extension.to_upper());
 			}
 
 			if (!scene->get_scene_file_path().is_empty()) {
@@ -3054,14 +3054,14 @@ void EditorNode::_menu_option_confirm(int p_option, bool p_confirmed) {
 			List<String> extensions;
 			ResourceLoader::get_recognized_extensions_for_type("PackedScene", &extensions);
 			file->clear_filters();
-			for (int i = 0; i < extensions.size(); i++) {
-				file->add_filter("*." + extensions[i], extensions[i].to_upper());
+			for (const String &extension : extensions) {
+				file->add_filter("*." + extension, extension.to_upper());
 			}
 
 			Node *scene = editor_data.get_edited_scene_root();
 			if (scene) {
 				file->set_current_path(scene->get_scene_file_path());
-			};
+			}
 			file->set_title(TTR("Pick a Main Scene"));
 			file->popup_file_dialog();
 
@@ -3486,6 +3486,10 @@ void EditorNode::remove_editor_plugin(EditorPlugin *p_editor, bool p_config_chan
 			}
 		}
 
+		if (singleton->editor_plugin_screen == p_editor) {
+			singleton->editor_plugin_screen = nullptr;
+		}
+
 		singleton->editor_table.erase(p_editor);
 	}
 	p_editor->make_visible(false);
@@ -3512,6 +3516,7 @@ void EditorNode::add_extension_editor_plugin(const StringName &p_class_name) {
 	EditorPlugin *plugin = Object::cast_to<EditorPlugin>(ClassDB::instantiate(p_class_name));
 	singleton->editor_data.add_extension_editor_plugin(p_class_name, plugin);
 	add_editor_plugin(plugin);
+	plugin->enable_plugin();
 }
 
 void EditorNode::remove_extension_editor_plugin(const StringName &p_class_name) {
@@ -7255,7 +7260,9 @@ EditorNode::EditorNode() {
 	add_editor_plugin(memnew(AudioBusesEditorPlugin(audio_bus_editor)));
 
 	for (int i = 0; i < EditorPlugins::get_plugin_count(); i++) {
-		add_editor_plugin(EditorPlugins::create(i));
+		EditorPlugin *plugin = EditorPlugins::create(i);
+		add_editor_plugin(plugin);
+		plugin->enable_plugin();
 	}
 
 	for (const StringName &extension_class_name : GDExtensionEditorPlugins::get_extension_classes()) {
