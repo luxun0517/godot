@@ -907,7 +907,12 @@ void DisplayServerMacOS::set_system_theme_change_callback(const Callable &p_call
 
 void DisplayServerMacOS::emit_system_theme_changed() {
 	if (system_theme_changed.is_valid()) {
-		system_theme_changed.call();
+		Variant ret;
+		Callable::CallError ce;
+		system_theme_changed.callp(nullptr, 0, ret, ce);
+		if (ce.error != Callable::CallError::CALL_OK) {
+			ERR_PRINT(vformat("Failed to execute system theme changed callback: %s.", Variant::get_callable_error_text(system_theme_changed, nullptr, 0, ce)));
+		}
 	}
 }
 
@@ -1416,11 +1421,25 @@ Point2i DisplayServerMacOS::mouse_get_position() const {
 	return Vector2i();
 }
 
-void DisplayServerMacOS::mouse_set_button_state(BitField<MouseButtonMask> p_state) {
-	last_button_state = p_state;
-}
-
 BitField<MouseButtonMask> DisplayServerMacOS::mouse_get_button_state() const {
+	BitField<MouseButtonMask> last_button_state = 0;
+
+	NSUInteger buttons = [NSEvent pressedMouseButtons];
+	if (buttons & (1 << 0)) {
+		last_button_state.set_flag(MouseButtonMask::LEFT);
+	}
+	if (buttons & (1 << 1)) {
+		last_button_state.set_flag(MouseButtonMask::RIGHT);
+	}
+	if (buttons & (1 << 2)) {
+		last_button_state.set_flag(MouseButtonMask::MIDDLE);
+	}
+	if (buttons & (1 << 3)) {
+		last_button_state.set_flag(MouseButtonMask::MB_XBUTTON1);
+	}
+	if (buttons & (1 << 4)) {
+		last_button_state.set_flag(MouseButtonMask::MB_XBUTTON2);
+	}
 	return last_button_state;
 }
 
@@ -3315,9 +3334,11 @@ void DisplayServerMacOS::delete_status_indicator(IndicatorID p_id) {
 }
 
 bool DisplayServerMacOS::is_window_transparency_available() const {
+#if defined(RD_ENABLED)
 	if (rendering_device && !rendering_device->is_composite_alpha_supported()) {
 		return false;
 	}
+#endif
 	return OS::get_singleton()->is_layered_allowed();
 }
 
@@ -3446,7 +3467,10 @@ void DisplayServerMacOS::popup_close(WindowID p_window) {
 		WindowID win_id = E->get();
 		popup_list.erase(E);
 
-		send_window_event(windows[win_id], DisplayServerMacOS::WINDOW_EVENT_CLOSE_REQUEST);
+		if (win_id != p_window) {
+			// Only request close on related windows, not this window.  We are already processing it.
+			send_window_event(windows[win_id], DisplayServerMacOS::WINDOW_EVENT_CLOSE_REQUEST);
+		}
 		E = F;
 	}
 	if (!was_empty && popup_list.is_empty()) {
